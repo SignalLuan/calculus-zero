@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>高等数学零基础交互课程</title>
+<style>
+  :root{
+    --bg:#f4f7fb; --panel:#ffffff; --ink:#1f2a37; --muted:#6b7280;
+    --accent:#2563eb; --accent2:#0ea5e9; --good:#16a34a; --bad:#dc2626;
+    --line:#e5e9f0; --soft:#eef3fb;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--ink);}
+  #app{display:flex;height:100vh;overflow:hidden;}
+
+  /* Sidebar */
+  #sidebar{width:248px;background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;flex-shrink:0;}
+  #sidebar h1{font-size:15px;margin:0;padding:18px 18px 6px;color:var(--accent);letter-spacing:.5px;}
+  #sidebar .sub{font-size:11px;color:var(--muted);padding:0 18px 14px;border-bottom:1px solid var(--line);}
+  .chap{margin:6px 10px;}
+  .chap > .ctitle{font-size:12px;font-weight:700;color:var(--muted);margin:10px 8px 4px;text-transform:uppercase;letter-spacing:.6px;}
+  .navitem{display:block;width:100%;text-align:left;border:none;background:transparent;color:var(--ink);
+    font-size:13px;padding:7px 12px;border-radius:8px;cursor:pointer;line-height:1.3;}
+  .navitem:hover{background:var(--soft);}
+  .navitem.active{background:var(--accent);color:#fff;font-weight:600;}
+
+  /* Main */
+  #main{flex:1;display:flex;flex-direction:column;min-width:0;}
+  #topbar{height:46px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 18px;background:var(--panel);}
+  #topbar .crumbs{font-size:13px;color:var(--muted);}
+  #topbar .ctrls button{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:8px;padding:6px 12px;margin-left:8px;cursor:pointer;font-size:13px;}
+  #topbar .ctrls button:hover{border-color:var(--accent);color:var(--accent);}
+  #stage{flex:1;overflow-y:auto;display:flex;align-items:flex-start;justify-content:center;padding:26px 20px 60px;}
+  .slide{display:none;width:100%;max-width:920px;background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:30px 38px 34px;box-shadow:0 8px 30px rgba(31,42,55,.06);}
+  .slide.show{display:block;animation:fade .35s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+  .slide h2{font-size:23px;margin:0 0 4px;color:var(--ink);}
+  .slide .tag{display:inline-block;font-size:11px;color:var(--accent);background:var(--soft);border-radius:20px;padding:3px 10px;margin-bottom:14px;}
+  .slide p{font-size:15px;line-height:1.75;color:#33404f;margin:10px 0;}
+  .slide ul{font-size:15px;line-height:1.8;color:#33404f;padding-left:20px;}
+  .slide .lead{font-size:16px;color:#475569;}
+  .kbox{background:var(--soft);border-left:4px solid var(--accent);border-radius:8px;padding:12px 16px;margin:14px 0;font-size:14.5px;line-height:1.7;}
+  .formula{font-family:"Cambria Math",Georgia,serif;font-size:19px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 16px;display:inline-block;margin:8px 0;color:#0f172a;}
+  .diagram{width:100%;background:#fbfdff;border:1px solid var(--line);border-radius:12px;margin:14px 0;}
+  .ctrl{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:10px 0 4px;font-size:13px;color:var(--muted);}
+  .ctrl input[type=range]{flex:1;max-width:340px;accent-color:var(--accent);}
+  .ctrl button{border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:8px;padding:6px 14px;cursor:pointer;font-size:13px;}
+  .ctrl button.ghost{background:#fff;color:var(--accent);}
+  .readout{font-size:13.5px;color:#0f172a;background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:6px 0;font-family:"Consolas",monospace;}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media(max-width:760px){.two{grid-template-columns:1fr;}}
+
+  /* Quiz */
+  .quiz{border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:16px 0;background:#fff;}
+  .quiz h3{font-size:15px;margin:0 0 10px;}
+  .qtype{font-size:11px;color:#fff;background:var(--accent2);border-radius:6px;padding:2px 8px;margin-right:8px;}
+  .opt{display:flex;align-items:flex-start;gap:10px;padding:9px 12px;border:1px solid var(--line);border-radius:9px;margin:7px 0;cursor:pointer;font-size:14px;}
+  .opt:hover{background:var(--soft);}
+  .opt input{margin-top:3px;}
+  .opt.correct{border-color:var(--good);background:#f0fdf4;}
+  .opt.wrong{border-color:var(--bad);background:#fef2f2;}
+  .fillinp{width:160px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:14px;}
+  .qbtn{margin-top:10px;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:8px;padding:7px 16px;cursor:pointer;font-size:13px;}
+  .qbtn.ghost{background:#fff;color:var(--accent);}
+  .feedback{margin-top:10px;font-size:13.5px;line-height:1.6;padding:10px 12px;border-radius:8px;display:none;}
+  .feedback.ok{display:block;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;}
+  .feedback.no{display:block;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;}
+
+  /* Drag match */
+  .matchwrap{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px;}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{background:var(--accent);color:#fff;border-radius:18px;padding:7px 14px;font-size:13px;cursor:grab;user-select:none;}
+  .chip.placed{opacity:.35;pointer-events:none;}
+  .zones{display:flex;flex-direction:column;gap:10px;}
+  .zone{border:2px dashed var(--line);border-radius:10px;padding:10px 12px;min-height:42px;font-size:13.5px;color:var(--muted);display:flex;align-items:center;gap:10px;}
+  .zone.over{border-color:var(--accent);background:var(--soft);}
+  .zone.done{border-style:solid;border-color:var(--good);color:#15803d;}
+  .zone .placed{background:var(--accent);color:#fff;border-radius:14px;padding:4px 10px;font-size:12.5px;}
+
+  .cover{text-align:center;padding:40px 20px;}
+  .cover .big{font-size:38px;font-weight:800;color:var(--accent);margin:10px 0;}
+  .cover .small{font-size:16px;color:var(--muted);line-height:1.8;}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px;}
+  .card{border:1px solid var(--line);border-radius:12px;padding:16px;background:var(--soft);}
+  .card b{color:var(--accent);font-size:15px;}
+  .card p{font-size:13px;color:#475569;margin:6px 0 0;}
+  .prevnext{display:flex;justify-content:space-between;margin-top:22px;}
+  .prevnext button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 18px;cursor:pointer;font-size:14px;color:var(--ink);}
+  .prevnext button:hover{border-color:var(--accent);color:var(--accent);}
+  .footnote{font-size:12px;color:var(--muted);margin-top:18px;border-top:1px dashed var(--line);padding-top:10px;}
+  /* presentation mode */
+  body.present #sidebar{display:none;}
+  body.present #topbar .nav-extra{display:none;}
+
+  /* Mobile bottom nav + menu */
+  #mbnav{display:none;}
+  #mbmenu{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:50;}
+  #mbmenu .panel{position:absolute;left:0;right:0;bottom:0;max-height:78vh;overflow-y:auto;background:#fff;border-radius:16px 16px 0 0;padding:14px 14px 26px;}
+  #mbmenu .panel h4{margin:6px 4px 8px;font-size:14px;color:var(--muted);}
+  #mbmenu .mitem{display:block;width:100%;text-align:left;border:none;background:#fff;padding:12px;border-radius:10px;font-size:14px;color:var(--ink);cursor:pointer;border-bottom:1px solid var(--line);}
+  #mbmenu .mitem:active{background:var(--soft);}
+  .chip.sel{outline:2px solid #fff;box-shadow:0 0 0 3px var(--accent);}
+  .matchwrap{margin-top:6px;}
+  .matchwrap .hint{font-size:12.5px;color:var(--muted);margin:2px 0 8px;}
+
+  @media(max-width:820px){
+    #sidebar{display:none;}
+    #topbar .nav-extra{display:none;}
+    #topbar .ctrls{display:none;}
+    #topbar{padding:0 12px;}
+    #stage{padding:14px 10px 92px;}
+    .slide{padding:18px 16px 22px;border-radius:10px;}
+    .slide h2{font-size:20px;}
+    .slide p,.slide ul,.slide .lead{font-size:14.5px;}
+    .formula{font-size:16px;}
+    .ctrl input[type=range]{max-width:none;}
+    #mbnav{display:flex;position:fixed;left:0;right:0;bottom:0;height:54px;background:#fff;border-top:1px solid var(--line);z-index:40;}
+    #mbnav button{flex:1;border:none;background:#fff;font-size:14px;color:var(--ink);cursor:pointer;}
+    #mbnav button.mid{border-left:1px solid var(--line);border-right:1px solid var(--line);color:var(--accent);font-weight:600;}
+    #mbnav button:active{background:var(--soft);}
+    .matchwrap{grid-template-columns:1fr;}
+    .chips{margin-bottom:6px;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <h1>高等数学 · 零基础</h1>
+    <div class="sub">交互式动画课程 · 真正理解极限 / 导数 / 积分</div>
+    <div id="nav"></div>
+  </aside>
+
+  <div id="main">
+    <div id="topbar">
+      <div class="crumbs" id="crumbs">课程导览</div>
+      <div class="ctrls">
+        <button class="nav-extra" onclick="togglePresent()">演示模式 (F)</button>
+        <button onclick="go(current-1)">上一页</button>
+        <button onclick="go(current+1)">下一页</button>
+      </div>
+    </div>
+    <div id="stage"><!-- slides injected --></div>
+    <div id="mbnav">
+      <button onclick="go(current-1)">← 上一页</button>
+      <button class="mid" onclick="toggleMbMenu()">目录</button>
+      <button onclick="go(current+1)">下一页 →</button>
+    </div>
+    <div id="mbmenu" onclick="if(event.target.id==='mbmenu')toggleMbMenu()">
+      <div class="panel"><h4>选择章节</h4><div id="mbmenu-list"></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============ Slide content model ============ */
+const SLIDES = [
+  { chap:"导览", title:"课程导览", tag:"Course Map", type:"cover",
+    html:`
+    <div class="cover">
+      <div class="big">高等数学零基础交互课</div>
+      <div class="small">写给第一次接触微积分的你<br>不背公式，先懂"为什么"与"是什么"</div>
+      <div class="grid3">
+        <div class="card"><b>第1章 极限</b><p>无限接近的思想，微积分的基石。含逼近动画。</p></div>
+        <div class="card"><b>第2章 导数</b><p>变化率与切线斜率。含割线转切线动画。</p></div>
+        <div class="card"><b>第3章 积分</b><p>面积与累积。含黎曼和动画与牛顿-莱布尼茨。</p></div>
+      </div>
+      <p class="small" style="margin-top:22px">每章结构：知识点动画 → 例题演示 → 互动练习（选择题 / 填空 / 拖动匹配）</p>
+    </div>` },
+
+  { chap:"预备", title:"函数：一台“数学机器”", tag:"预备知识 · 1", type:"text",
+    html:`
+    <span class="tag">预备知识</span>
+    <h2>函数：一台"数学机器"</h2>
+    <p class="lead">在进极限之前，先确认我们站在同一块地面上。微积分研究的对象，几乎都是<strong>函数</strong>。</p>
+    <div class="kbox">把函数想象成一台机器：你从左边塞进一个数 <b>x</b>，机器按固定规则加工，从右边吐出一个数 <b>y</b>。这台机器的规则，就是函数。</div>
+    <ul>
+      <li><b>输入 x</b>：叫自变量，比如时间、位置。</li>
+      <li><b>输出 y</b>：叫因变量，记为 y = f(x)，"f"就是机器名。</li>
+      <li><b>规则</b>：同一个 x 永远得到同一个 y（确定性）。</li>
+    </ul>
+    <p>例：自由落体下落距离 <b>s = 4.9 t²</b>。机器名 f，规则是"平方后乘 4.9"。塞 t=2 秒，吐出 s=19.6 米。</p>
+    <div class="formula">y = f(x)</div>
+    <p class="footnote">下一节我们会把"机器"画成图像，这是看懂极限与导数的关键一步。</p>` },
+
+  { chap:"预备", title:"图像：把数字画出来", tag:"预备知识 · 2", type:"text",
+    html:`
+    <span class="tag">预备知识</span>
+    <h2>图像：把数字画成一条线</h2>
+    <p class="lead">函数的"机器规则"一旦画成图，很多抽象关系立刻变直观。</p>
+    <ul>
+      <li>横轴（x 轴）放输入，纵轴（y 轴）放输出。</li>
+      <li>每个 (x, y) 对应图上的一个点；所有点连起来就是<strong>函数图像</strong>。</li>
+      <li>直线、抛物线、波浪线……形状本身就在"说话"。</li>
+    </ul>
+    <div class="kbox"><b>斜率复习</b>：直线的斜率 = 竖着走了多少 ÷ 横着走了多少 = Δy / Δx。它衡量"倾斜程度"。斜率大=陡，斜率 0=平，负斜率=向下倾斜。</div>
+    <p>记住 Δ（念 delta）表示"变化量"。后面导数就是让这个"平均斜率"无限精确化的结果。</p>
+    <div class="formula">直线斜率 = (y₂ − y₁) / (x₂ − x₁) = Δy / Δx</div>` },
+
+  { chap:"第1章", title:"第1章 · 极限绪论", tag:"极限 LIMITS", type:"text",
+    html:`
+    <span class="tag">第1章 极限</span>
+    <h2>为什么先学"极限"？</h2>
+    <p class="lead">导数和积分，本质上都是某种"极限"。不理解极限，后面两座大厦就建在沙子上。</p>
+    <p>极限回答一个朴素的问题：<strong>当 x 越来越靠近某个值时，y 会停在哪儿？</strong></p>
+    <ul>
+      <li>它不要求 x 真的到达那个点，只关心"无限接近时的归宿"。</li>
+      <li>这个"归宿值"就叫极限值，记作 lim。</li>
+      <li>用极限，我们才能量化"瞬间""无穷""连续"，从而发明导数与积分。</li>
+    </ul>
+    <div class="kbox">一句话：极限是微积分的"无限逼近"思维。下面用动画亲手感受它。</div>` },
+
+  { chap:"第1章", title:"1.1 无限接近：极限的直觉", tag:"极限 · 动画", type:"anim", anim:"limit",
+    html:`
+    <span class="tag">第1章 极限 · 1.1</span>
+    <h2>无限接近，但不一定到达</h2>
+    <p class="lead">拖动滑块让 x 从两侧逼近 1，观察曲线上的点的高度 y 会贴向哪条水平线。注意：函数在 x=1 处"挖了个洞"，实际取值是另一个点。</p>
+    <svg class="diagram" id="svg-limit" viewBox="0 0 600 370"></svg>
+    <div class="ctrl">
+      <label>h（x 偏离 1 的程度）</label>
+      <input type="range" id="lim-h" min="-0.9" max="0.9" step="0.001" value="0.9">
+      <button id="lim-play">自动逼近</button>
+      <button class="ghost" id="lim-reset">重置</button>
+    </div>
+    <div class="readout" id="lim-read">x = 1.900,  f(x) = 5.61,  目标极限 L = 3</div>
+    <div class="kbox"><b>看明白了吗？</b>无论从左还是右逼近，点的高度都飞向同一条线 y = 3。这就是 lim<sub>x→1</sub> f(x) = 3。而图上那个孤立的实心点（y=6）只是函数在 x=1 的"任性取值"，<b>不影响极限</b>。极限看的是"趋势"，不是"那个点本身"。</div>` },
+
+  { chap:"第1章", title:"1.2 极限的写法与几何意义", tag:"极限 · 概念", type:"text",
+    html:`
+    <span class="tag">第1章 极限 · 1.2</span>
+    <h2>怎么写、怎么看</h2>
+    <div class="formula">lim<sub>x→a</sub> f(x) = L</div>
+    <ul>
+      <li>读作："当 x 趋于 a 时，f(x) 的极限是 L"。</li>
+      <li><b>几何意义</b>：x=a 两侧曲线都向高度 L 收拢，像两条手臂抱住一条水平线。</li>
+      <li><b>左右极限</b>：从左边逼近叫左极限（x→a⁻），从右边叫右极限（x→a⁺）。只有两侧都趋于同一个 L，极限才存在。</li>
+    </ul>
+    <div class="kbox"><b>判定口诀</b>：左极限 = 右极限 = L ⇔ 极限存在且等于 L。若两侧抱住的线不一样高，极限就"不存在"。</div>` },
+
+  { chap:"第1章", title:"1.5 两个重要极限", tag:"极限 · 公式", type:"text",
+    html:`
+    <span class="tag">第1章 极限 · 1.5</span>
+    <h2>两个会反复出现的"老朋友"</h2>
+    <p>这两个极限是后面推导的万能钥匙，先认个脸：</p>
+    <div class="formula">lim<sub>x→0</sub> (sin x) / x = 1</div>
+    <div class="formula">lim<sub>n→∞</sub> (1 + 1/n)<sup>n</sup> = e ≈ 2.71828…</div>
+    <ul>
+      <li>第一个描述"小角度时 sin x 和 x 几乎一样长"，是三角求导的命根子。</li>
+      <li>第二个给出了自然常数 e，遍布连续增长、复利、衰减模型。</li>
+    </ul>
+    <div class="kbox">不必现在证明，先记住"脸"。用到时我们会回头解释它们为什么成立。</div>` },
+
+  { chap:"第1章", title:"第1章 互动练习", tag:"极限 · 测验", type:"quiz",
+    quiz:[
+      { q:"lim<sub>x→2</sub> f(x) = 5 的正确理解是？", type:"mc",
+        opts:["当 x=2 时，函数值一定等于 5","x 无限接近 2 时，函数值无限接近 5","函数在 x=2 处必须有定义","f(2) 必须等于 5"],
+        ans:1, exp:"极限只描述趋势。函数在 x=2 处甚至可以无定义（如挖洞），极限仍可为 5。" },
+      { q:"若左极限 = 4，右极限 = 6，则 lim<sub>x→a</sub> f(x) ？", type:"mc",
+        opts:["等于 5","等于 4","不存在","等于 10"],
+        ans:2, exp:"左右极限不相等，极限不存在。两侧必须抱住同一条线。" },
+      { q:"填空：lim<sub>x→0</sub> (sin x)/x = ____", type:"fill", ans:["1"], exp:"第一个重要极限，记住它等于 1。" }
+    ]},
+
+  { chap:"第2章", title:"第2章 · 导数绪论", tag:"导数 DERIVATIVE", type:"text",
+    html:`
+    <span class="tag">第2章 导数</span>
+    <h2>导数：测量"变化的快慢"</h2>
+    <p class="lead">瞬时速度、曲线坡度、增长速率……这些问题的答案，统一叫<strong>导数</strong>。</p>
+    <ul>
+      <li>平均速度 = 总路程 ÷ 总时间（一段的斜线）。</li>
+      <li>瞬时速度 = 把这段时间缩到极短（极限思想），斜线变成那一点的<strong>切线</strong>。</li>
+      <li>所以：导数 = 函数在某点的切线斜率 = 变化率的极限。</li>
+    </ul>
+    <div class="kbox">导数把"平均变化"精确成"瞬间变化"。下面用动画看割线如何变成切线。</div>` },
+
+  { chap:"第2章", title:"2.2 导数定义与几何意义", tag:"导数 · 动画", type:"anim", anim:"deriv",
+    html:`
+    <span class="tag">第2章 导数 · 2.2</span>
+    <h2>割线 → 切线：差商的极限</h2>
+    <p class="lead">固定点 A，让点 B 沿着曲线向 A 滑近。连接 A、B 的<strong>割线</strong>会逐渐旋转，最终贴合 A 点的<strong>切线</strong>。切线的斜率，就是导数 f'(a)。</p>
+    <svg class="diagram" id="svg-deriv" viewBox="0 0 600 370"></svg>
+    <div class="ctrl">
+      <label>h（B 距 A 的水平距离）</label>
+      <input type="range" id="der-h" min="-1.4" max="1.4" step="0.001" value="1.4">
+      <button id="der-play">自动逼近</button>
+      <button class="ghost" id="der-reset">重置</button>
+    </div>
+    <div class="readout" id="der-read">h = 1.400,  割线斜率 = 6.00,  切线斜率 f'(1.6) = 3.20</div>
+    <div class="kbox"><b>核心公式</b>：f'(a) = lim<sub>h→0</sub> [f(a+h) − f(a)] / h。分子是"竖着变了多少"，分母是"横着变了多少"，再让横变化趋于 0，得到的就是瞬间斜率。</div>` },
+
+  { chap:"第2章", title:"2.4 基本求导公式", tag:"导数 · 公式", type:"text",
+    html:`
+    <span class="tag">第2章 导数 · 2.4</span>
+    <h2>常用求导公式（先认脸）</h2>
+    <div class="formula">常数的导数 = 0</div>
+    <div class="formula">(xⁿ)' = n·xⁿ⁻¹　（幂法则）</div>
+    <div class="formula">(sin x)' = cos x　　(cos x)' = −sin x</div>
+    <div class="formula">(eˣ)' = eˣ　　(ln x)' = 1/x</div>
+    <p><b>运算法则</b>：(u+v)' = u'+v'；(u·v)' = u'v + uv'；复合函数链式法则 (f(g(x)))' = f'(g(x))·g'(x)。</p>
+    <div class="kbox">例：f(x)=x² 的导数是 2x。在 x=1.6 处，f'(1.6)=3.2，正好等于上页动画切线斜率——公式与几何意义对上了。</div>` },
+
+  { chap:"第2章", title:"第2章 互动练习", tag:"导数 · 测验", type:"quiz",
+    quiz:[
+      { q:"导数的几何意义是？", type:"mc",
+        opts:["曲线与 x 轴的交点","函数在某点的切线斜率","函数的最大值","曲线的长度"],
+        ans:1, exp:"导数 = 切线斜率 = 变化率的极限。" },
+      { q:"将下列概念拖到正确解释上", type:"match",
+        pairs:[ ["导数","函数在某点的瞬时变化率（切线斜率）"],
+                ["极限","无限逼近时的归宿值"],
+                ["差商","平均变化率 Δy/Δx，导数的前身"] ] },
+      { q:"填空：若 f(x)=x³，则 f'(x)=____", type:"fill", ans:["3x^2","3x²"], exp:"幂法则：(xⁿ)'=n·xⁿ⁻¹，这里 n=3。" }
+    ]},
+
+  { chap:"第3章", title:"第3章 · 积分绪论", tag:"积分 INTEGRAL", type:"text",
+    html:`
+    <span class="tag">第3章 积分</span>
+    <h2>积分：把"弯弯的面积"算准</h2>
+    <p class="lead">矩形面积好算，可是曲线下的面积怎么求？积分给出的答案：用无数个细矩形去"铺"，再取极限。</p>
+    <ul>
+      <li><b>定积分</b>：曲线下、两个 x 之间的面积，记作 ∫。</li>
+      <li>思路：切成 n 条细矩形 → 求和 → 让 n 趋于无穷 → 矩形面积和逼近真实面积。</li>
+      <li><b>不定积分</b>：求导的"逆操作"，找原函数。</li>
+    </ul>
+    <div class="kbox">惊人发现：求导（拆变化）与积分（积面积）是一对逆运算。这就是下一节的牛顿-莱布尼茨公式。</div>` },
+
+  { chap:"第3章", title:"3.2 定积分：黎曼和", tag:"积分 · 动画", type:"anim", anim:"riemann",
+    html:`
+    <span class="tag">第3章 积分 · 3.2</span>
+    <h2>黎曼和：用矩形铺出面积</h2>
+    <p class="lead">拖动滑块增加矩形数量 n。灰色是曲线下真实面积，彩色矩形是近似值。n 越大，矩形和越贴真实面积——这就是定积分。</p>
+    <svg class="diagram" id="svg-riemann" viewBox="0 0 600 370"></svg>
+    <div class="ctrl">
+      <label>矩形数量 n</label>
+      <input type="range" id="rie-n" min="1" max="50" step="1" value="4">
+      <span id="rie-nval">n = 4</span>
+    </div>
+    <div class="readout" id="rie-read">矩形面积和 ≈ 3.74　|　真实面积（积分）≈ 4.04</div>
+    <div class="kbox"><b>定义</b>：∫<sub>a</sub><sup>b</sup> f(x) dx = lim<sub>n→∞</sub> Σ f(中点)·Δx。Δx 是每个矩形的宽，求和再取极限，弯面积被"直"出来。</div>` },
+
+  { chap:"第3章", title:"3.3 牛顿-莱布尼茨公式", tag:"积分 · 桥梁", type:"text",
+    html:`
+    <span class="tag">第3章 积分 · 3.3</span>
+    <h2>微积分基本定理</h2>
+    <div class="formula">∫<sub>a</sub><sup>b</sup> f(x) dx = F(b) − F(a)，其中 F'(x) = f(x)</div>
+    <ul>
+      <li>F 是 f 的一个原函数（求导的逆）。</li>
+      <li>含义：曲边面积，不用再切无穷矩形，只要找原函数代入两端相减。</li>
+      <li>它把"求导"和"积分"两座山连成一条隧道：一个拆，一个积，互为逆运算。</li>
+    </ul>
+    <div class="kbox">例：求 ∫<sub>0</sub><sup>1</sup> 2x dx。原函数 F=x²，结果 F(1)−F(0)=1−0=1。而上页黎曼和在 n 很大时也逼近 1，两路同归。</div>` },
+
+  { chap:"第3章", title:"第3章 互动练习", tag:"积分 · 测验", type:"quiz",
+    quiz:[
+      { q:"定积分 ∫<sub>a</sub><sup>b</sup> f(x)dx 表示的是？", type:"mc",
+        opts:["函数在 a、b 的平均值","曲线下、x=a 到 x=b 之间的面积","函数的导数","函数的零点个数"],
+        ans:1, exp:"定积分的几何意义就是曲边梯形面积。" },
+      { q:"牛顿-莱布尼茨公式把哪两者联系起来？", type:"mc",
+        opts:["极限与无穷小","求导与积分（原函数）","函数与反函数","数列与级数"],
+        ans:1, exp:"微积分基本定理：求导与积分互为逆运算。" },
+      { q:"填空：若 F'(x)=f(x)，则 ∫<sub>a</sub><sup>b</sup> f(x)dx = ____", type:"fill", ans:["F(b)-F(a)","F(b)−F(a)","F(b) - F(a)"], exp:"用原函数两端相减即得定积分。" }
+    ]},
+
+  { chap:"结语", title:"课程总结与下一步", tag:"WRAP-UP", type:"text",
+    html:`
+    <span class="tag">结语</span>
+    <h2>你现在已经握住了三把钥匙</h2>
+    <div class="grid3">
+      <div class="card"><b>极限</b><p>无限逼近的思维，是一切的起点。</p></div>
+      <div class="card"><b>导数</b><p>瞬间变化率 = 切线斜率，用差商取极限得到。</p></div>
+      <div class="card"><b>积分</b><p>曲边面积 = 黎曼和取极限，与原函数相连。</p></div>
+    </div>
+    <p class="lead" style="margin-top:18px">建议的后续路线：极限运算法则 → 导数计算实战 → 积分计算实战 → 用微积分解真实问题（最优化、面积体积、运动学）。</p>
+    <div class="kbox">学习心法：遇到公式先问"它对应哪幅图、描述什么趋势"。把符号翻译成画面，微积分就从恐惧变成直觉。</div>
+    <p class="footnote">本课件为交互式 HTML 演示文稿，可按 F 进入全屏演示模式，方向键翻页。如需导出为 PowerPoint(.pptx) 或 PDF，可告诉我。</p>` }
+];
+
+/* ============ Build nav + slides ============ */
+const stage = document.getElementById('stage');
+const nav = document.getElementById('nav');
+let current = 0;
+
+const chapContainers = {};
+SLIDES.forEach((s, i)=>{
+  // nav: one collapsible-free container per chapter, items appended in order
+  let cont = chapContainers[s.chap];
+  if(!cont){
+    const wrap=document.createElement('div');
+    wrap.className='chap';
+    wrap.innerHTML=`<div class="ctitle">${s.chap}</div>`;
+    nav.appendChild(wrap);
+    cont = chapContainers[s.chap] = wrap;
+  }
+  const btn=document.createElement('button');
+  btn.className='navitem';
+  btn.textContent=s.title;
+  btn.onclick=()=>go(i);
+  btn.dataset.idx=i;
+  cont.appendChild(btn);
+
+  // slide
+  const sec=document.createElement('section');
+  sec.className='slide';
+  sec.id='slide-'+i;
+  sec.innerHTML = s.html + `<div class="prevnext"><button onclick="go(${i-1})">← 上一页</button><button onclick="go(${i+1})">下一页 →</button></div>`;
+  stage.appendChild(sec);
+});
+
+function go(i){
+  if(i<0||i>=SLIDES.length) return;
+  current=i;
+  document.querySelectorAll('.slide').forEach((el,idx)=>el.classList.toggle('show', idx===i));
+  document.querySelectorAll('.navitem').forEach((el)=>el.classList.toggle('active', +el.dataset.idx===i));
+  document.getElementById('crumbs').textContent = SLIDES[i].chap+' · '+SLIDES[i].title;
+  document.getElementById('stage').scrollTop=0;
+  window.scrollTo(0,0);
+}
+
+/* ============ Quiz engine ============ */
+function buildQuizzes(){
+  document.querySelectorAll('.slide').forEach((sec, si)=>{
+    const data = SLIDES[si].quiz;
+    if(!data) return;
+    data.forEach((q, qi)=>{
+      const box=document.createElement('div');
+      box.className='quiz';
+      let inner=`<h3><span class="qtype">${q.type==='mc'?'选择题':q.type==='fill'?'填空题':'匹配题'}</span>${q.q}</h3>`;
+      if(q.type==='mc'){
+        inner+='<div class="opts">';
+        q.opts.forEach((o,oi)=>{
+          inner+=`<label class="opt"><input type="radio" name="q${si}_${qi}" value="${oi}"> ${o}</label>`;
+        });
+        inner+='</div>';
+      } else if(q.type==='fill'){
+        inner+=`<input class="fillinp" id="fill${si}_${qi}" placeholder="输入答案">`;
+      } else if(q.type==='match'){
+        inner+=`<div class="matchwrap"><p class="hint">点左侧词条，再点右侧对应解释即可匹配（手机 / 电脑通用）。</p><div class="chips" id="chips${si}_${qi}"></div><div class="zones" id="zones${si}_${qi}"></div></div>`;
+      }
+      if(q.type!=='match') inner+=`<button class="qbtn" onclick="checkQuiz(${si},${qi})">检查答案</button>`;
+      inner+=`<div class="feedback" id="fb${si}_${qi}"></div>`;
+      box.innerHTML=inner;
+      // inject before prevnext
+      sec.insertBefore(box, sec.querySelector('.prevnext'));
+      if(q.type==='match') setupMatch(si,qi,q.pairs);
+    });
+  });
+}
+
+function checkQuiz(si,qi){
+  const q=SLIDES[si].quiz[qi];
+  const fb=document.getElementById(`fb${si}_${qi}`);
+  let ok=false, msg='';
+  if(q.type==='mc'){
+    const sel=document.querySelector(`input[name="q${si}_${qi}"]:checked`);
+    if(!sel){ fb.className='feedback no'; fb.innerHTML='请先选择一个选项。'; return; }
+    const val=+sel.value;
+    document.querySelectorAll(`input[name="q${si}_${qi}"]`).forEach((r,ri)=>{
+      const lab=r.closest('.opt');
+      if(ri===q.ans) lab.classList.add('correct');
+      if(ri===val && val!==q.ans) lab.classList.add('wrong');
+    });
+    ok = val===q.ans;
+    msg = ok ? '✓ 答对了！' : '✗ 再想想。';
+  } else if(q.type==='fill'){
+    const v=document.getElementById(`fill${si}_${qi}`).value.trim().replace(/\s+/g,'');
+    ok = q.ans.some(a=>a.replace(/\s+/g,'')===v);
+    msg='';
+  }
+  if(q.type!=='match'){
+    fb.className='feedback '+(ok?'ok':'no');
+    fb.innerHTML = (ok?'✓ 正确。':'✗ 不正确。') + ' ' + q.exp;
+  }
+}
+
+/* drag match */
+function setupMatch(si,qi,pairs){
+  const chips=document.getElementById(`chips${si}_${qi}`);
+  const zones=document.getElementById(`zones${si}_${qi}`);
+  let selected=null;
+  // shuffle terms
+  const terms=pairs.map(p=>p[0]);
+  const shuffled=[...terms].sort(()=>Math.random()-0.5);
+  shuffled.forEach(t=>{
+    const c=document.createElement('div');
+    c.className='chip'; c.textContent=t; c.dataset.term=t;
+    c.onclick=()=>{
+      if(c.classList.contains('placed')) return;
+      if(selected && selected!==c) selected.classList.remove('sel');
+      selected=c; c.classList.add('sel');
+    };
+    chips.appendChild(c);
+  });
+  pairs.forEach((p)=>{
+    const z=document.createElement('div');
+    z.className='zone'; z.dataset.expect=p[0];
+    z.innerHTML=`<span class="zdef">${p[1]}</span>`;
+    z.onclick=()=>{
+      if(z.classList.contains('done')) return;
+      if(!selected){
+        z.classList.add('over'); setTimeout(()=>z.classList.remove('over'),250); return;
+      }
+      const t=selected.dataset.term;
+      if(t===z.dataset.expect){
+        z.classList.add('done');
+        z.innerHTML=`<span class="placed">${t}</span> <span class="zdef">${p[1]}</span>`;
+        selected.classList.add('placed'); selected.classList.remove('sel'); selected=null;
+        checkMatchDone(si,qi,pairs);
+      } else {
+        z.classList.add('over'); setTimeout(()=>z.classList.remove('over'),300);
+        selected.classList.remove('sel'); selected=null;
+      }
+    };
+    zones.appendChild(z);
+  });
+}
+function checkMatchDone(si,qi,pairs){
+  const zones=document.getElementById(`zones${si}_${qi}`);
+  if(zones.querySelectorAll('.zone.done').length===pairs.length){
+    const fb=document.getElementById(`fb${si}_${qi}`);
+    fb.className='feedback ok';
+    fb.innerHTML='✓ 全部匹配正确！导数、极限、差商的关系已经理清。';
+  }
+}
+
+/* ============ Animations (SVG, not video) ============ */
+function svgEl(svg,tag,attrs){
+  const e=document.createElementNS('http://www.w3.org/2000/svg',tag);
+  for(const k in attrs) e.setAttribute(k,attrs[k]);
+  svg.appendChild(e); return e;
+}
+
+/* --- Limit animation --- */
+function initLimit(){
+  const svg=document.getElementById('svg-limit'); if(!svg) return;
+  const W=600,H=370, x0=50,y0=330, x1=550,y1=40;
+  const Xmin=0,Xmax=2.4, Ymin=0,Ymax=9;
+  const mx=x=> x0+(x-Xmin)/(Xmax-Xmin)*(x1-x0);
+  const my=y=> y0-(y-Ymin)/(Ymax-Ymin)*(y0-y1);
+  const f=x=> (Math.abs(x-1)<1e-9)? 6 : (x*x*x-1)/(x-1); // =x^2+x+1 except hole; value at 1 set 6
+  // axes
+  svgEl(svg,'line',{x1:x0,y1:y0,x2:x1,y2:y0,stroke:'#cbd5e1','stroke-width':1.5});
+  svgEl(svg,'line',{x1:x0,y1:y0,x2:x0,y2:y1,stroke:'#cbd5e1','stroke-width':1.5});
+  // limit line y=3
+  svgEl(svg,'line',{x1:x0,y1:my(3),x2:x1,y2:my(3),stroke:'#16a34a','stroke-width':1.5,'stroke-dasharray':'6 5'});
+  svgEl(svg,'text',{x:x1-6,y:my(3)-6,fill:'#16a34a','font-size':13,'text-anchor':'end'}).textContent='L = 3';
+  // curve (with a gap at x=1 to visualize the "hole")
+  let d=''; let started=false;
+  for(let x=0;x<=2.4;x+=0.01){
+    if(Math.abs(x-1)<0.02){ started=false; continue; }
+    d += (started?' L ':' M ')+mx(x)+' '+my(f(x));
+    started=true;
+  }
+  svgEl(svg,'path',{d:d,fill:'none',stroke:'#2563eb','stroke-width':3});
+  // actual point at x=1 (y=6)
+  svgEl(svg,'circle',{cx:mx(1),cy:my(6),r:5,fill:'#dc2626'});
+  svgEl(svg,'text',{x:mx(1)+8,y:my(6)+4,fill:'#dc2626','font-size':12}).textContent='f(1)=6';
+  // moving point + guides (created once, updated)
+  const vline=svgEl(svg,'line',{stroke:'#94a3b8','stroke-width':1,'stroke-dasharray':'4 4'});
+  const hline=svgEl(svg,'line',{stroke:'#94a3b8','stroke-width':1,'stroke-dasharray':'4 4'});
+  const dot=svgEl(svg,'circle',{r:6,fill:'#0ea5e9'});
+  const Ldot=svgEl(svg,'circle',{cx:mx(1),cy:my(3),r:4,fill:'none',stroke:'#16a34a','stroke-width':2});
+  function update(h){
+    const x=1+h; const y=f(x);
+    dot.setAttribute('cx',mx(x)); dot.setAttribute('cy',my(y));
+    vline.setAttribute('x1',mx(x)); vline.setAttribute('y1',my(y));
+    vline.setAttribute('x2',mx(x)); vline.setAttribute('y2',y0);
+    hline.setAttribute('x1',mx(x)); hline.setAttribute('y1',my(y));
+    hline.setAttribute('x2',x0); hline.setAttribute('y2',my(y));
+    document.getElementById('lim-read').textContent=
+      `x = ${x.toFixed(3)},  f(x) = ${y.toFixed(2)},  目标极限 L = 3`;
+  }
+  const slider=document.getElementById('lim-h');
+  slider.addEventListener('input',()=>update(+slider.value));
+  let playing=false, raf;
+  document.getElementById('lim-play').onclick=()=>{
+    playing=!playing;
+    if(playing){
+      document.getElementById('lim-play').textContent='暂停';
+      let h=0.9, dir=-1;
+      function step(){
+        h+=dir*0.012;
+        if(h<=0.001){h=0.001;dir=1;}
+        if(h>=0.9){h=0.9;dir=-1;}
+        slider.value=h; update(h);
+        if(playing) raf=requestAnimationFrame(step);
+      }
+      step();
+    } else { cancelAnimationFrame(raf); document.getElementById('lim-play').textContent='自动逼近'; }
+  };
+  document.getElementById('lim-reset').onclick=()=>{playing=false;cancelAnimationFrame(raf);document.getElementById('lim-play').textContent='自动逼近';slider.value=0.9;update(0.9);};
+  update(0.9);
+}
+
+/* --- Derivative animation --- */
+function initDeriv(){
+  const svg=document.getElementById('svg-deriv'); if(!svg) return;
+  const W=600,H=370, x0=50,y0=330, x1=550,y1=40;
+  const Xmin=0,Xmax=3.4, Ymin=0,Ymax=12;
+  const mx=x=> x0+(x-Xmin)/(Xmax-Xmin)*(x1-x0);
+  const my=y=> y0-(y-Ymin)/(Ymax-Ymin)*(y0-y1);
+  const f=x=> x*x;
+  const a=1.6;
+  svgEl(svg,'line',{x1:x0,y1:y0,x2:x1,y2:y0,stroke:'#cbd5e1','stroke-width':1.5});
+  svgEl(svg,'line',{x1:x0,y1:y0,x2:x0,y2:y1,stroke:'#cbd5e1','stroke-width':1.5});
+  let d='';
+  for(let x=0;x<=3.4;x+=0.01){ d+=(x===0?'M ':' L ')+mx(x)+' '+my(f(x)); }
+  svgEl(svg,'path',{d:d,fill:'none',stroke:'#2563eb','stroke-width':3});
+  // point A
+  const Ay=f(a);
+  svgEl(svg,'circle',{cx:mx(a),cy:my(Ay),r:6,fill:'#dc2626'});
+  svgEl(svg,'text',{x:mx(a)+8,y:my(Ay)-8,fill:'#dc2626','font-size':12}).textContent='A';
+  // tangent line at A (slope 2a)
+  const slope=2*a;
+  const drawLine=(x_a,y_a,m,color,w,dash)=>{
+    // line y-y_a = m(x-x_a); find two points within domain
+    const xL=0, xR=3.4;
+    const yL=y_a+m*(xL-x_a), yR=y_a+m*(xR-x_a);
+    return svgEl(svg,'line',{x1:mx(xL),y1:my(yL),x2:mx(xR),y2:my(yR),stroke:color,'stroke-width':w,'stroke-dasharray':dash||''});
+  };
+  const tangent=drawLine(a,Ay,slope,'#16a34a',2,'6 5');
+  const secant=svgEl(svg,'line',{stroke:'#f59e0b','stroke-width':2.5});
+  const Bdot=svgEl(svg,'circle',{r:6,fill:'#0ea5e9'});
+  function update(h){
+    const xb=a+h; const yb=f(xb);
+    const m=(yb-Ay)/(xb-a);
+    Bdot.setAttribute('cx',mx(xb)); Bdot.setAttribute('cy',my(yb));
+    // secant through A and B extended
+    const xL=0,xR=3.4;
+    const yL=Ay+m*(xL-a), yR=Ay+m*(xR-a);
+    secant.setAttribute('x1',mx(xL)); secant.setAttribute('y1',my(yL));
+    secant.setAttribute('x2',mx(xR)); secant.setAttribute('y2',my(yR));
+    document.getElementById('der-read').textContent=
+      `h = ${h.toFixed(3)},  割线斜率 = ${m.toFixed(2)},  切线斜率 f'(${a}) = ${slope.toFixed(2)}`;
+  }
+  const slider=document.getElementById('der-h');
+  slider.addEventListener('input',()=>update(+slider.value));
+  let playing=false, raf;
+  document.getElementById('der-play').onclick=()=>{
+    playing=!playing;
+    if(playing){
+      document.getElementById('der-play').textContent='暂停';
+      let h=1.4,dir=1;
+      function step(){ h+=dir*0.02; if(h>=1.4){h=1.4;dir=-1;} if(h<=0.02){h=0.02;dir=1;} slider.value=h; update(h); if(playing)raf=requestAnimationFrame(step);}
+      step();
+    } else { cancelAnimationFrame(raf); document.getElementById('der-play').textContent='自动逼近'; }
+  };
+  document.getElementById('der-reset').onclick=()=>{playing=false;cancelAnimationFrame(raf);document.getElementById('der-play').textContent='自动逼近';slider.value=1.4;update(1.4);};
+  update(1.4);
+}
+
+/* --- Riemann animation --- */
+function initRiemann(){
+  const svg=document.getElementById('svg-riemann'); if(!svg) return;
+  const W=600,H=370, x0=50,y0=330, x1=550,y1=40;
+  const A=0.5,B=3.5, Ymax=1.7;
+  const mx=x=> x0+(x-A)/(B-A)*(x1-x0);
+  const my=y=> y0-(y/Ymax)*(y0-y1);
+  const g=x=> 1+0.5*Math.sin(x);
+  // exact integral via fine sampling
+  let exact=0; const N=4000; const dx=(B-A)/N;
+  for(let i=0;i<N;i++){ const xm=A+(i+0.5)*dx; exact+=g(xm)*dx; }
+  svgEl(svg,'line',{x1:x0,y1:y0,x2:x1,y2:y0,stroke:'#cbd5e1','stroke-width':1.5});
+  svgEl(svg,'line',{x1:x0,y1:y0,x2:x0,y2:y1,stroke:'#cbd5e1','stroke-width':1.5});
+  // curve
+  let d='';
+  for(let x=A;x<=B;x+=0.01){ d+=(x===A?'M ':' L ')+mx(x)+' '+my(g(x)); }
+  svgEl(svg,'path',{d:d,fill:'none',stroke:'#2563eb','stroke-width':3});
+  // true area fill (light)
+  let area=`M ${mx(A)} ${my(0)} `;
+  for(let x=A;x<=B;x+=0.02){ area+=' L '+mx(x)+' '+my(g(x)); }
+  area+=` L ${mx(B)} ${my(0)} Z`;
+  svgEl(svg,'path',{d:area,fill:'#cbd5e1',opacity:0.35});
+  const rectGroup=svgEl(svg,'g',{});
+  const cols=['#0ea5e9','#22c55e','#f59e0b','#a855f7'];
+  function update(n){
+    while(rectGroup.firstChild) rectGroup.removeChild(rectGroup.firstChild);
+    const w=(B-A)/n; let sum=0;
+    for(let i=0;i<n;i++){
+      const mid=A+(i+0.5)*w; const h=g(mid);
+      sum+=h*w;
+      const xL=A+i*w;
+      svgEl(rectGroup,'rect',{x:mx(xL),y:my(h),width:mx(xL+w)-mx(xL),height:my(0)-my(h),
+        fill:cols[i%cols.length],opacity:0.55,stroke:'#fff','stroke-width':1});
+    }
+    document.getElementById('rie-nval').textContent='n = '+n;
+    document.getElementById('rie-read').textContent=
+      `矩形面积和 ≈ ${sum.toFixed(2)}　|　真实面积（积分）≈ ${exact.toFixed(2)}`;
+  }
+  const slider=document.getElementById('rie-n');
+  slider.addEventListener('input',()=>update(+slider.value));
+  update(4);
+}
+
+/* ============ Init ============ */
+function togglePresent(){ document.body.classList.toggle('present'); }
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight') go(current+1);
+  if(e.key==='ArrowLeft') go(current-1);
+  if(e.key==='f'||e.key==='F') togglePresent();
+});
+
+/* Mobile: chapter menu + swipe navigation (touch friendly) */
+function toggleMbMenu(){
+  const m=document.getElementById('mbmenu');
+  m.style.display = (m.style.display==='block') ? 'none' : 'block';
+}
+function buildMbMenu(){
+  const list=document.getElementById('mbmenu-list');
+  if(!list) return;
+  document.querySelectorAll('.navitem').forEach(b=>{
+    const c=b.cloneNode(true);
+    c.classList.remove('active');
+    c.onclick=()=>{ go(+b.dataset.idx); toggleMbMenu(); };
+    list.appendChild(c);
+  });
+}
+let touchX=0, swipeIgnore=false;
+const stageEl=document.getElementById('stage');
+stageEl.addEventListener('touchstart',e=>{
+  touchX=e.touches[0].clientX;
+  swipeIgnore = !!e.target.closest('input,button,.ctrl,.quiz,svg,label');
+},{passive:true});
+stageEl.addEventListener('touchend',e=>{
+  if(swipeIgnore) return;
+  const dx=e.changedTouches[0].clientX-touchX;
+  if(Math.abs(dx)>50){ if(dx<0) go(current+1); else go(current-1); }
+},{passive:true});
+
+buildQuizzes();
+initLimit();
+initDeriv();
+initRiemann();
+buildMbMenu();
+go(0);
+</script>
+</body>
+</html>
